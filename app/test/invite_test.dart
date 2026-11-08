@@ -29,7 +29,9 @@ void main() {
 
   test('matches what the server CLI prints (base64url, no padding)', () {
     // `serdab link` does: base64 -w0 | tr '+/' '-_' | tr -d '='
-    final link = Invite.encode('[Interface]\nPrivateKey = a\nAddress = 10.0.0.2/32\n[Peer]\nPublicKey = b\nEndpoint = h:1');
+    final link = Invite.encode(
+      '[Interface]\nPrivateKey = a\nAddress = 10.0.0.2/32\n[Peer]\nPublicKey = b\nEndpoint = h:1',
+    );
     final c = Uri.parse(link).queryParameters['c']!;
     expect(c, isNot(contains('=')));
     expect(c, isNot(contains('+')));

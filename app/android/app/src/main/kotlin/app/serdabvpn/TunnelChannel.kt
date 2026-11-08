@@ -1,7 +1,10 @@
 package app.serdabvpn
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.net.VpnService
 import android.provider.Settings
 import com.wireguard.config.BadConfigException
@@ -23,12 +26,31 @@ class TunnelChannel(private val activity: Activity, messenger: BinaryMessenger) 
         MethodChannel(messenger, "serdab/tunnel").setMethodCallHandler { call, result ->
             when (call.method) {
                 "prepare" -> prepare(result)
-                "connect" -> connect(call.argument<String>("config"), call.argument<Boolean>("alwaysOn") ?: true, result)
+                "connect" -> connect(call.argument<String>("config"), call.argument<Boolean>("alwaysOn") ?: false,
+                    call.argument<Int>("closeAfterMinutes") ?: 0, result)
                 "disconnect" -> {
                     Engine.setWanted(activity, false)
+                    AutoClose.cancel(activity)
                     Engine.down(activity) { finish(it, result) }
                 }
-                "setAlwaysOn" -> { Engine.setWanted(activity, call.argument<Boolean>("enabled") ?: true); result.success(null) }
+                "setAlwaysOn" -> {
+                    val on = call.argument<Boolean>("enabled") ?: false
+                    Engine.setWanted(activity, on)
+                    if (on) AutoClose.cancel(activity)
+                    result.success(null)
+                }
+                "extend" -> {
+                    AutoClose.extend(activity, call.argument<Int>("minutes") ?: 60)
+                    result.success(AutoClose.closeAt(activity).takeIf { it > 0 })
+                }
+                "closeAt" -> result.success(AutoClose.closeAt(activity).takeIf { it > 0 })
+                "requestNotifications" -> {
+                    if (Build.VERSION.SDK_INT >= 33 &&
+                        activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                        activity.requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_NOTIFY)
+                    }
+                    result.success(null)
+                }
                 "openVpnSettings" -> {
                     activity.startActivity(Intent(Settings.ACTION_VPN_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     result.success(null)
@@ -74,7 +96,7 @@ class TunnelChannel(private val activity: Activity, messenger: BinaryMessenger) 
         return true
     }
 
-    private fun connect(config: String?, alwaysOn: Boolean, result: MethodChannel.Result) {
+    private fun connect(config: String?, alwaysOn: Boolean, closeAfterMinutes: Int, result: MethodChannel.Result) {
         if (config == null) {
             result.error("bad_config", "no config", null)
             return
@@ -92,6 +114,7 @@ class TunnelChannel(private val activity: Activity, messenger: BinaryMessenger) 
         }
         Vault.save(activity, config)
         Engine.setWanted(activity, alwaysOn)
+        if (!alwaysOn && closeAfterMinutes > 0) AutoClose.schedule(activity, closeAfterMinutes) else AutoClose.cancel(activity)
         Engine.up(activity, parsed) { finish(it, result) }
     }
 
@@ -112,5 +135,6 @@ class TunnelChannel(private val activity: Activity, messenger: BinaryMessenger) 
 
     companion object {
         const val REQUEST_VPN = 0x5E4D
+        const val REQUEST_NOTIFY = 0x5E4E
     }
 }

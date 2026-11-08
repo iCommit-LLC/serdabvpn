@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Plain HTTP only to serdabd inside the tunnel (the tunnel encrypts it). -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.7.0.1</domain>
+    </domain-config>
+</network-security-config>

@@ -125,9 +125,9 @@ class S {
   String get stayUnderground =>
       _t('Stay underground', 'Rester sous terre', 'ابقَ في السرداب');
   String get stayUndergroundSub => _t(
-    'Connects by itself, and comes back after a restart.',
-    'Se connecte tout seul, et revient après un redémarrage.',
-    'يتصل من تلقاء نفسه، ويعود بعد إعادة التشغيل.',
+    'Never closes by itself, and comes back after a restart.',
+    'Ne se ferme jamais seul, et revient après un redémarrage.',
+    'لا يُغلق من تلقاء نفسه، ويعود بعد إعادة التشغيل.',
   );
   String get makePermanent => _t(
     'Make it permanent: Android settings',
@@ -158,4 +158,67 @@ class S {
   String get keep => _t('Keep', 'Garder', 'احتفظ');
   String get ready =>
       _t('This phone is set up.', 'Ce téléphone est prêt.', 'هذا الهاتف جاهز.');
+
+  // Closing by itself
+  String closesAt(String time) => _t(
+    'Closes by itself at $time',
+    'Se ferme tout seul à $time',
+    'يُغلق من تلقاء نفسه عند $time',
+  );
+  String get addHour => _t('+1 hour', '+1 heure', '+ساعة');
+
+  // What the server says about this phone
+  String visibleTo(String who) => _t(
+    'While you are connected, the sites you visit are visible to $who.',
+    'Pendant la connexion, les sites que vous visitez sont visibles par $who.',
+    'أثناء الاتصال، المواقع التي تزورها مرئية لـ $who.',
+  );
+  String accessUntil(String date) => _t(
+    'Your access ends on $date.',
+    'Votre accès se termine le $date.',
+    'ينتهي وصولك في $date.',
+  );
+  String get accessEnded =>
+      _t('Your access has ended', 'Votre accès est terminé', 'انتهى وصولك');
+  String get accessEndedSub => _t(
+    'Ask the person who invited you for a new invitation.',
+    'Demandez une nouvelle invitation à la personne qui vous a invité.',
+    'اطلب دعوة جديدة من الشخص الذي دعاك.',
+  );
+
+  // Sharing
+  String get invite => _t('Invite someone', 'Inviter quelqu\'un', 'ادعُ شخصًا');
+  String get inviteName => _t('Their name', 'Son prénom', 'اسمه');
+  String get inviteNameHint => _t('e.g. Salma', 'ex. Salma', 'مثلاً سلمى');
+  String get createInvite =>
+      _t('Create the invitation', 'Créer l\'invitation', 'أنشئ الدعوة');
+  String inviteNote(String date) => _t(
+    'For one phone. It works until $date. Unused, it expires in 48 hours.',
+    'Pour un seul téléphone. Valable jusqu\'au $date. Inutilisée, elle expire dans 48 heures.',
+    'لهاتف واحد. صالحة حتى $date. إن لم تُستعمل تنتهي خلال 48 ساعة.',
+  );
+  String get inviteWarn => _t(
+    'It is a key: send it to that one person, then delete the message.',
+    'C\'est une clé : envoyez-la à cette seule personne, puis supprimez le message.',
+    'إنها مفتاح: أرسلها لذلك الشخص وحده، ثم احذف الرسالة.',
+  );
+  String get sendIt => _t('Send it', 'L\'envoyer', 'أرسلها');
+  String get inviteAgain =>
+      _t('Invite someone else', 'Inviter une autre personne', 'ادعُ شخصًا آخر');
+  String get yourGuests =>
+      _t('People you invited', 'Vos invités', 'الأشخاص الذين دعوتهم');
+  String get connectFirst => _t(
+    'Open the door first: invitations are made by the server, through the tunnel.',
+    'Ouvrez d\'abord la porte : les invitations sont créées par le serveur, via le tunnel.',
+    'افتح الباب أولاً: الدعوات يصنعها الخادم عبر السرداب.',
+  );
+  String guestStatus(String status) => switch (status) {
+    'online' => _t('connected', 'connecté', 'متصل'),
+    'pending' => _t('not used yet', 'pas encore utilisée', 'لم تُستعمل بعد'),
+    'expired' => _t('ended', 'terminée', 'انتهت'),
+    'disabled' || 'paused' => _t('stopped', 'arrêtée', 'موقوفة'),
+    _ => _t('active', 'active', 'نشطة'),
+  };
+  String until(String date) =>
+      _t('until $date', 'jusqu\'au $date', 'حتى $date');
 }

@@ -8,17 +8,20 @@ import '../config.dart';
 import '../invite.dart';
 import '../l10n.dart';
 import '../main.dart';
+import '../server.dart';
 import '../store.dart';
 import '../theme.dart';
 import '../tunnel.dart';
 import '../ui/arch.dart';
 import 'onboarding.dart';
 import 'scan.dart';
+import 'share.dart';
 
 /// One door. Tap it to go underground, tap it again to come back up.
 ///
-/// With "stay underground" on (the default) the door opens by itself when the
-/// screen appears, so the person holding the phone never has to.
+/// The door opens by itself when the screen appears and closes by itself two
+/// hours later (a warning first, with "+1 hour"): a call abroad, then done.
+/// Owner and family devices can choose "stay underground" instead.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
@@ -47,8 +50,13 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription<TunnelState>? _sub;
   Timer? _tick;
   int _ticks = 0;
-  bool _alwaysOn = true;
+  bool _alwaysOn = false;
   bool _autoTried = false;
+  Me? _me;
+  DateTime? _closeAt;
+
+  /// Always-on is for the owner and family; everyone else closes after 2 h.
+  bool get _stayOpen => _alwaysOn && (_me?.mayStayOpen ?? false);
 
   @override
   void initState() {
@@ -60,6 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _start() async {
     _alwaysOn = await Store.alwaysOn();
+    _me = Me.fromJson(await Store.me());
+    _closeAt = await _tunnel.closeAt();
     TunnelState s;
     try {
       s = await _tunnel.state();
@@ -68,9 +78,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (!mounted) return;
     _onState(s);
-    if (!_autoTried &&
-        (widget.autoConnect || _alwaysOn) &&
-        s == TunnelState.disconnected) {
+    if (_me?.expired ?? false) return;
+    if (!_autoTried && s == TunnelState.disconnected) {
       _autoTried = true;
       await _toggle();
     }
@@ -93,9 +102,40 @@ class _HomeScreenState extends State<HomeScreen> {
         _since = null;
         _stats = null;
       }
+      if (s == TunnelState.disconnected) _closeAt = null;
       _state = s;
     });
+    if (s == TunnelState.connected) _askServer();
   }
+
+  /// Who am I to the server: role, sharing, access end, who sees the history.
+  /// Asked through the tunnel, so only once it is up; kept for when it is not.
+  Future<void> _askServer() async {
+    for (var i = 0; i < 4 && mounted && _state == TunnelState.connected; i++) {
+      final j = await Server.instance.me();
+      if (j != null) {
+        await Store.setMe(j);
+        final at = await _tunnel.closeAt();
+        if (!mounted) return;
+        setState(() {
+          _me = Me.fromJson(j);
+          _closeAt = at;
+        });
+        return;
+      }
+      await Future<void>.delayed(const Duration(seconds: 3));
+    }
+  }
+
+  Future<void> _extend() async {
+    HapticFeedback.selectionClick();
+    final at = await _tunnel.extend();
+    if (mounted) setState(() => _closeAt = at);
+  }
+
+  void _share() => Navigator.of(
+    context,
+  ).push(MaterialPageRoute(builder: (_) => const ShareScreen()));
 
   Future<void> _onTick() async {
     if (_state != TunnelState.connected) return;
@@ -119,7 +159,14 @@ class _HomeScreenState extends State<HomeScreen> {
           return;
         }
         _onState(TunnelState.connecting);
-        await _tunnel.connect(_config.raw, alwaysOn: _alwaysOn);
+        if (!_stayOpen) await _tunnel.requestNotifications();
+        await _tunnel.connect(
+          _config.raw,
+          alwaysOn: _stayOpen,
+          closeAfterMinutes: _me?.autoCloseMinutes ?? 120,
+        );
+        final at = await _tunnel.closeAt();
+        if (mounted) setState(() => _closeAt = at);
       }
     } on PlatformException catch (e) {
       _onState(await _tunnel.state());
@@ -214,6 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
       DateTime.now().difference(_since!).inSeconds > 8;
 
   (String, String) _words(S s) => switch (_state) {
+    _ when _me?.expired ?? false => (s.accessEnded, s.accessEndedSub),
     TunnelState.connected when _unanswered => (
       s.noAnswer,
       s.noAnswerSub(_config.host, _config.endpoint.split(':').last),
@@ -263,7 +311,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ArchButton(state: _state, onTap: _toggle, size: size),
+                      ArchButton(
+                        state: _state,
+                        onTap: (_me?.expired ?? false) ? () {} : _toggle,
+                        size: size,
+                      ),
                       const SizedBox(height: 28),
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 250),
@@ -281,6 +333,16 @@ class _HomeScreenState extends State<HomeScreen> {
                               style: text.bodySmall,
                               textAlign: TextAlign.center,
                             ),
+                            for (final n in _notices(context, s)) ...[
+                              const SizedBox(height: 10),
+                              Text(
+                                n,
+                                style: text.bodySmall!.copyWith(
+                                  color: Palette.sand,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -288,12 +350,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              if (_state == TunnelState.connected)
-                _StatsRow(stats: _stats, clock: _clock)
-              else
+              if (_state == TunnelState.connected) ...[
+                if (_closeAt != null)
+                  _CloseRow(at: _closeAt!, onExtend: _extend),
+                _StatsRow(stats: _stats, clock: _clock),
+                if (_me?.canShare ?? false)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: OutlinedButton.icon(
+                      onPressed: _share,
+                      icon: const Icon(Icons.qr_code_2_rounded, size: 18),
+                      label: Text(s.invite),
+                    ),
+                  ),
+              ] else
                 _DeviceCard(
                   config: _config,
-                  alwaysOn: _alwaysOn,
+                  showAlwaysOn: _me?.mayStayOpen ?? false,
+                  alwaysOn: _stayOpen,
                   onAlwaysOn: _setAlwaysOn,
                   onRescan: _rescan,
                   onForget: _forget,
@@ -301,6 +375,52 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+extension on _HomeScreenState {
+  List<String> _notices(BuildContext context, S s) {
+    final me = _me;
+    if (me == null || me.expired) return const [];
+    return [
+      if (me.expiresAt != null)
+        s.accessUntil(
+          MaterialLocalizations.of(context).formatMediumDate(me.expiresAt!),
+        ),
+      if (me.visibleTo != null) s.visibleTo(me.visibleTo!),
+    ];
+  }
+}
+
+class _CloseRow extends StatelessWidget {
+  const _CloseRow({required this.at, required this.onExtend});
+
+  final DateTime at;
+  final VoidCallback onExtend;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final time = MaterialLocalizations.of(context).formatTimeOfDay(
+      TimeOfDay.fromDateTime(at),
+      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          const Icon(Icons.timer_outlined, size: 16, color: Palette.muted),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              s.closesAt(time),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          TextButton(onPressed: onExtend, child: Text(s.addHour)),
+        ],
       ),
     );
   }
@@ -414,6 +534,7 @@ class _Cell extends StatelessWidget {
 class _DeviceCard extends StatelessWidget {
   const _DeviceCard({
     required this.config,
+    required this.showAlwaysOn,
     required this.alwaysOn,
     required this.onAlwaysOn,
     required this.onRescan,
@@ -421,6 +542,7 @@ class _DeviceCard extends StatelessWidget {
   });
 
   final WgConfig config;
+  final bool showAlwaysOn;
   final bool alwaysOn;
   final ValueChanged<bool> onAlwaysOn;
   final VoidCallback onRescan;
@@ -455,15 +577,16 @@ class _DeviceCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          SwitchListTile.adaptive(
-            value: alwaysOn,
-            onChanged: onAlwaysOn,
-            contentPadding: EdgeInsets.zero,
-            activeTrackColor: Palette.amber,
-            title: Text(s.stayUnderground, style: text.titleMedium),
-            subtitle: Text(s.stayUndergroundSub, style: text.bodySmall),
-          ),
-          if (Platform.isAndroid && alwaysOn)
+          if (showAlwaysOn)
+            SwitchListTile.adaptive(
+              value: alwaysOn,
+              onChanged: onAlwaysOn,
+              contentPadding: EdgeInsets.zero,
+              activeTrackColor: Palette.amber,
+              title: Text(s.stayUnderground, style: text.titleMedium),
+              subtitle: Text(s.stayUndergroundSub, style: text.bodySmall),
+            ),
+          if (showAlwaysOn && Platform.isAndroid && alwaysOn)
             ListTile(
               contentPadding: EdgeInsets.zero,
               dense: true,
@@ -479,7 +602,7 @@ class _DeviceCard extends StatelessWidget {
               subtitle: Text(s.makePermanentSub, style: text.bodySmall),
               onTap: () => Tunnel.instance.openVpnSettings(),
             ),
-          const Divider(color: Palette.line, height: 8),
+          if (showAlwaysOn) const Divider(color: Palette.line, height: 8),
           row(s.thisDevice, config.ip),
           row(s.server, config.endpoint),
           row(s.serverKey, '${config.peerPublicKey.substring(0, 8)}…'),

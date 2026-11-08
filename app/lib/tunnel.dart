@@ -37,11 +37,33 @@ class Tunnel {
   /// [alwaysOn] arms the platform's own comeback: Android keeps the config
   /// for the boot receiver and the system's Always-on VPN, iOS turns on
   /// on-demand so the tunnel rises whenever there is a network.
-  Future<void> connect(String wgQuickConfig, {required bool alwaysOn}) =>
-      _methods.invokeMethod<void>('connect', {
-        'config': wgQuickConfig,
-        'alwaysOn': alwaysOn,
-      });
+  ///
+  /// Without [alwaysOn], the native side closes the door [closeAfterMinutes]
+  /// after it opened, with a notification five minutes before ("+1 hour").
+  Future<void> connect(
+    String wgQuickConfig, {
+    required bool alwaysOn,
+    int closeAfterMinutes = 0,
+  }) => _methods.invokeMethod<void>('connect', {
+    'config': wgQuickConfig,
+    'alwaysOn': alwaysOn,
+    'closeAfterMinutes': closeAfterMinutes,
+  });
+
+  /// Moves the auto-close deadline; returns the new one.
+  Future<DateTime?> extend({int minutes = 60}) async =>
+      _ms(await _methods.invokeMethod<int>('extend', {'minutes': minutes}));
+
+  /// When the door closes by itself, or null when it stays open.
+  Future<DateTime?> closeAt() async =>
+      _ms(await _methods.invokeMethod<int>('closeAt'));
+
+  /// The warning needs notifications: Android 13+ and iOS ask once.
+  Future<void> requestNotifications() =>
+      _methods.invokeMethod<void>('requestNotifications');
+
+  static DateTime? _ms(int? ms) =>
+      ms == null || ms <= 0 ? null : DateTime.fromMillisecondsSinceEpoch(ms);
 
   /// A deliberate disconnect also disarms the comeback until the next connect,
   /// otherwise iOS on-demand would reopen the door the moment it shut.
