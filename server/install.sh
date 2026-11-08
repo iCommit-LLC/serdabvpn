@@ -11,11 +11,11 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 export DEBIAN_FRONTEND=noninteractive
 
 [[ $EUID -eq 0 ]] || { echo "install.sh: run as root" >&2; exit 1; }
-[[ -f $HERE/serdab ]] || { echo "install.sh: the 'serdab' CLI must sit next to this script" >&2; exit 1; }
+[[ -f $HERE/serdab && -f $HERE/serdabd/serdabd.py ]] || { echo "install.sh: the 'serdab' CLI and serdabd/ must sit next to this script" >&2; exit 1; }
 
 echo "→ packages"
 apt-get update -q
-apt-get install -y -q wireguard-tools qrencode nftables curl iproute2 procps >/dev/null
+apt-get install -y -q wireguard-tools qrencode nftables curl iproute2 procps dnsmasq-base python3 >/dev/null
 
 echo "→ ip forwarding"
 mkdir -p /etc/sysctl.d && echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/99-serdab.conf
@@ -55,8 +55,30 @@ fi
 
 install -m 0755 "$HERE/serdab" /usr/local/bin/serdab
 
+echo "→ serdabd (devices, rules, DNS filter, logs)"
+install -d -m 0755 /usr/local/lib/serdab /var/log/serdab
+install -d -m 0700 /etc/serdab /var/lib/serdab
+install -m 0644 "$HERE/serdabd/serdabd.py" /usr/local/lib/serdab/serdabd.py
+install -m 0644 "$HERE/serdabd/etc/dnsmasq-filtered.conf" "$HERE/serdabd/etc/dnsmasq-open.conf" /etc/serdab/
+[[ -f /etc/serdab/admin.key ]] || head -c 32 /dev/urandom | base64 | tr -d '/+=' > /etc/serdab/admin.key
+chmod 600 /etc/serdab/admin.key
+INTERNAL_IP=$(curl -fs -m 3 -H 'Metadata-Flavor: Google' \
+  http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip 2>/dev/null || true)
+cat > /etc/serdab/serdabd.env <<ENV
+# 127.0.0.1 for the CLI; the private address for the dashboard (Cloud Run, direct VPC egress)
+SERDAB_ADMIN_HOSTS=127.0.0.1${INTERNAL_IP:+,$INTERNAL_IP}
+SERDAB_OWNER_NAME=${SERDAB_OWNER_NAME:-Taha}
+SERDAB_COST_PER_GB=${SERDAB_COST_PER_GB:-0.12}
+SERDAB_TZ=${SERDAB_TZ:-Asia/Qatar}
+ENV
+
 if command -v systemctl >/dev/null && systemctl is-system-running >/dev/null 2>&1; then
+  install -m 0644 "$HERE/serdabd/etc/serdabd.service" "$HERE/serdabd/etc/serdab-dns@.service" /etc/systemd/system/
+  systemctl daemon-reload
   systemctl enable --now "wg-quick@$WG_IF" >/dev/null
+  systemctl enable serdab-dns@filtered serdab-dns@open serdabd >/dev/null 2>&1
+  systemctl restart serdab-dns@filtered serdab-dns@open serdabd
+  for i in $(seq 1 20); do serdab list >/dev/null 2>&1 && break; sleep 0.5; done
 else
   wg-quick up "$WG_IF" 2>/dev/null || true   # containers and tests: no systemd
 fi

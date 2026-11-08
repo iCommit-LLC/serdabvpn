@@ -47,11 +47,11 @@ for i in $(seq 1 30); do
 done
 
 echo "→ installing WireGuard"
-g compute scp "$HERE/install.sh" "$HERE/serdab" "$NAME:/tmp/" --zone "$ZONE" >/dev/null
-ssh_vm "sudo SERDAB_PORT=$PORT SERDAB_ENDPOINT=$IP bash /tmp/install.sh && rm -f /tmp/install.sh /tmp/serdab"
+g compute scp --recurse "$HERE/install.sh" "$HERE/serdab" "$HERE/serdabd" "$NAME:/tmp/" --zone "$ZONE" >/dev/null
+ssh_vm "sudo SERDAB_PORT=$PORT SERDAB_ENDPOINT=$IP bash /tmp/install.sh && rm -rf /tmp/install.sh /tmp/serdab /tmp/serdabd"
 
 echo "→ enrolling '$DEVICE'"
-ssh_vm "sudo serdab add $DEVICE || sudo serdab qr $DEVICE"
+ssh_vm "sudo serdab add $DEVICE owner || sudo serdab qr $DEVICE"
 
 cat <<DONE
 

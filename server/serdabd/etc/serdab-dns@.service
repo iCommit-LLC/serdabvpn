@@ -1,0 +1,12 @@
+[Unit]
+Description=serdab DNS (%i)
+After=wg-quick@wg0.service
+PartOf=wg-quick@wg0.service
+
+[Service]
+ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/serdab/dnsmasq-%i.conf
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
