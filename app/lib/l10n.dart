@@ -170,10 +170,12 @@ class S {
   String get addHour => _t('+1 hour', '+1 heure', '+ساعة');
 
   // What the server says about this phone
-  String visibleTo(String who) => _t(
-    'While you are connected, the sites you visit are visible to $who.',
-    'Pendant la connexion, les sites que vous visitez sont visibles par $who.',
-    'أثناء الاتصال، المواقع التي تزورها مرئية لـ $who.',
+  /// Shown to devices whose site history is kept. Says that it is
+  /// monitored, never by whom.
+  String get monitored => _t(
+    'The sites visited on this connection are monitored.',
+    'Les sites visités sur cette connexion sont surveillés.',
+    'المواقع التي تُزار عبر هذا الاتصال مراقَبة.',
   );
   String accessUntil(String date) => _t(
     'Your access ends on $date.',

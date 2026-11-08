@@ -9,13 +9,13 @@ void main() {
       'role': 'guest',
       'canShare': false,
       'expiresAt': exp.millisecondsSinceEpoch ~/ 1000,
-      'visibleTo': null,
+      'monitored': false,
       'autoCloseMinutes': 120,
     })!;
     expect(me.isGuest, isTrue);
     expect(me.mayStayOpen, isFalse);
     expect(me.expired, isFalse);
-    expect(me.visibleTo, isNull);
+    expect(me.monitored, isFalse);
   });
 
   test('an expired guest, and family may stay open', () {
@@ -32,7 +32,7 @@ void main() {
       'name': 'wife',
       'role': 'family',
       'canShare': true,
-      'visibleTo': 'Taha',
+      'monitored': true,
     })!;
     expect(wife.mayStayOpen, isTrue);
     expect(wife.canShare, isTrue);

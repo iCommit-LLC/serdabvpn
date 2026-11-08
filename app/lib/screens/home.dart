@@ -400,7 +400,7 @@ extension on _HomeScreenState {
         s.accessUntil(
           MaterialLocalizations.of(context).formatMediumDate(me.expiresAt!),
         ),
-      if (me.visibleTo != null) s.visibleTo(me.visibleTo!),
+      if (me.monitored) s.monitored,
     ];
   }
 }

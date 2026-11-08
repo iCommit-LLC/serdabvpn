@@ -55,8 +55,9 @@ class T(unittest.TestCase):
             S.device_route(app, me("son"), "POST", ["v1", "invites"], lambda: {"name": "friend"})
         self.assertEqual(e.exception.code, 403)
         m = S.device_route(app, me("son"), "GET", ["v1", "me"], dict)
-        self.assertEqual((m["visibleTo"], m["canShare"], m["autoCloseMinutes"]), ("Taha", False, 120))
-        self.assertIsNone(S.device_route(app, me("phone"), "GET", ["v1", "me"], dict)["visibleTo"])
+        self.assertEqual((m["monitored"], m["canShare"], m["autoCloseMinutes"]), (True, False, 120))
+        self.assertNotIn("Taha", json.dumps(m))          # the device is never told who watches
+        self.assertFalse(S.device_route(app, me("phone"), "GET", ["v1", "me"], dict)["monitored"])
 
     def test_04_traffic_sessions_quota(self):
         sx = app.sys; g = me("aunt-salma"); t = S.now()

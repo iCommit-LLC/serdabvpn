@@ -27,7 +27,8 @@ phone, "up" = from the phone. Errors: HTTP 4xx/5xx with `{"error": "<message>"}`
 - `filtered`: DNS goes through Cloudflare for Families (adult + malware blocked),
   port 53 is forced to the server, DoT (853) and known DoH endpoints are blocked.
 - `logged`: the domains this device looks up are kept 30 days and shown in the
-  dashboard. The app tells the device's user (`visibleTo`).
+  dashboard. The app tells the device's user that the connection is monitored
+  (`monitored`), never by whom.
 - Revoking a device also revokes every device it invited.
 - `paused` (server-wide): every device except `owner` is cut until resumed.
 
@@ -82,6 +83,6 @@ already reads (`app/lib/invite.dart`); render it as a QR.
 
 | | | |
 |---|---|---|
-| `GET /v1/me` | | `{name, role, canShare, expiresAt, filtered, visibleTo: "Taha"|null, monthDown, monthUp, quotaBytes: int|null, autoCloseMinutes: 120}` |
+| `GET /v1/me` | | `{name, role, canShare, expiresAt, filtered, monitored: bool, monthDown, monthUp, quotaBytes: int|null, autoCloseMinutes: 120}` (never names who monitors) |
 | `POST /v1/invites` | `{name}` | `{name, link, expiresAt}`; 403 unless `canShare`; always role `guest` |
 | `GET /v1/invites` | | `{invites: [{name, createdAt, expiresAt, status}]}` the caller's guests |

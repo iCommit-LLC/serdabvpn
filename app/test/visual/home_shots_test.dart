@@ -87,7 +87,7 @@ void main() {
         'name': 'phone',
         'role': 'owner',
         'canShare': true,
-        'visibleTo': null,
+        'monitored': false,
         'autoCloseMinutes': 120,
       });
       m.setMockMethodCallHandler(

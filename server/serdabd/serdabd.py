@@ -786,7 +786,7 @@ def device_route(app: Serdab, d, m: str, p: list[str], body):
     if m == "GET" and p == ["v1", "me"]:
         md, mu = app.month_bytes(d["name"])
         return {"name": d["name"], "role": d["role"], "canShare": bool(d["can_share"]), "expiresAt": d["expires_at"],
-                "filtered": bool(d["filtered"]), "visibleTo": OWNER_NAME if d["logged"] else None,
+                "filtered": bool(d["filtered"]), "monitored": bool(d["logged"]),
                 "monthDown": md, "monthUp": mu,
                 "quotaBytes": int(d["quota_gb"] * 1e9) if d["quota_gb"] is not None else None,
                 "autoCloseMinutes": AUTO_CLOSE_MIN}

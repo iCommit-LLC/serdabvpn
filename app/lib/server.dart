@@ -8,7 +8,7 @@ class Me {
     required this.role,
     required this.canShare,
     this.expiresAt,
-    this.visibleTo,
+    this.monitored = false,
     this.autoCloseMinutes = 120,
   });
 
@@ -17,8 +17,8 @@ class Me {
   final bool canShare;
   final DateTime? expiresAt;
 
-  /// Who can see the sites this device visits (null: nobody).
-  final String? visibleTo;
+  /// The sites this device visits are kept (the server never says by whom).
+  final bool monitored;
   final int autoCloseMinutes;
 
   bool get isGuest => role == 'guest';
@@ -35,7 +35,7 @@ class Me {
       expiresAt: exp == null
           ? null
           : DateTime.fromMillisecondsSinceEpoch(exp * 1000),
-      visibleTo: j['visibleTo'] as String?,
+      monitored: j['monitored'] == true || j['visibleTo'] != null,
       autoCloseMinutes: (j['autoCloseMinutes'] as num?)?.toInt() ?? 120,
     );
   }
