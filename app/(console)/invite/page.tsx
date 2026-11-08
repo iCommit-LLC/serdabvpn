@@ -2,8 +2,8 @@ import { Flash } from "@/components/Flash";
 import { invite } from "../actions";
 
 const ROLE_HELP: Record<string, string> = {
-  family: "Never expires. Can share guest invitations from their app. Sites filtered and visible to you (they are told).",
-  kid: "Never expires. Cannot share. Sites filtered and visible to you (they are told).",
+  family: "Never expires. Can share guest invitations from their app. Sites filtered and kept for you (their app says the connection is monitored, not by whom).",
+  kid: "Never expires. Cannot share. Sites filtered and kept for you (their app says the connection is monitored, not by whom).",
   guest: "Ends 21 days from now; an unused invitation is removed after 48 h. 30 GB a month, 5 Mbps, filtered.",
 };
 

@@ -72,7 +72,7 @@ export default async function DevicePage({ params, searchParams }: { params: Pro
         error={sp.error}
         messages={{
           saved: "Saved.",
-          "logged-on": `Saved. Their app now tells them the sites they visit are visible to you.`,
+          "logged-on": `Saved. Their app now says the sites visited on this connection are monitored (not by whom).`,
           enabled: "Enabled. They can connect again.",
           disabled: "Disabled. Their phone is cut off; the device and its history stay.",
           created: "Invitation ready.",
@@ -237,7 +237,7 @@ function Settings({ d }: { d: Device }) {
       <Toggle
         name="logged"
         label="Keep site history"
-        help="Domains kept 30 days. When on, their app tells them their sites are visible to you."
+        help="Domains kept 30 days. When on, their app says the connection is monitored (not by whom)."
         checked={d.logged}
       />
       <div className="grid grid-cols-2 gap-3">
@@ -299,7 +299,7 @@ function Sites({
       {!d.logged && rows.length === 0 ? (
         <p className="text-sm text-muted">
           Site history is off for {d.name}. Turn on <span className="text-text">Keep site history</span> in Rules; their app will then tell
-          them their sites are visible to you. You see domains (youtube.com), never pages or messages.
+          them the connection is monitored, without naming you. You see domains (youtube.com), never pages or messages.
         </p>
       ) : (
         <>
