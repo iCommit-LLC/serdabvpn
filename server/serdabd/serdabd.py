@@ -646,14 +646,30 @@ def make_handler(app: Serdab, kind: str):
             self.end_headers()
             self.wfile.write(body)
 
-        def body(self) -> dict:
+        def raw_body(self) -> bytes:
+            # Dart's HttpClient (the app) sends chunked bodies; http.server does not decode them.
+            if "chunked" in (self.headers.get("Transfer-Encoding") or "").lower():
+                out = b""
+                while True:
+                    size = int(self.rfile.readline().split(b";")[0].strip() or b"0", 16)
+                    if size == 0:
+                        self.rfile.readline()
+                        return out
+                    out += self.rfile.read(size)
+                    self.rfile.readline()
+                    if len(out) > 65536:
+                        raise ApiError(413, "body too large")
             n = int(self.headers.get("Content-Length") or 0)
             if n > 65536:
                 raise ApiError(413, "body too large")
-            if not n:
+            return self.rfile.read(n) if n else b""
+
+        def body(self) -> dict:
+            raw = self.raw_body()
+            if not raw:
                 return {}
             try:
-                b = json.loads(self.rfile.read(n))
+                b = json.loads(raw)
             except ValueError:
                 raise ApiError(400, "body is not JSON")
             if not isinstance(b, dict):

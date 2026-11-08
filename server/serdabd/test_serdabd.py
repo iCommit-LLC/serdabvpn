@@ -46,6 +46,16 @@ class T(unittest.TestCase):
         conf = S.base64.urlsafe_b64decode(re.search(r"c=([^&]+)", r["link"]).group(1) + "==").decode()
         self.assertIn("DNS = 10.7.0.1", conf); self.assertIn("Endpoint = 34.163.198.164:51820", conf)
 
+    def test_02b_chunked_body(self):
+        import http.client
+        c = http.client.HTTPConnection("127.0.0.1", 18801)
+        c.putrequest("POST", "/admin/v1/devices")
+        c.putheader("Authorization", "Bearer " + "k" * 40); c.putheader("Transfer-Encoding", "chunked"); c.endheaders()
+        body = json.dumps({"name": "chunky", "role": "guest"}).encode()
+        c.send(b"%x\r\n%s\r\n0\r\n\r\n" % (len(body), body))
+        r = c.getresponse(); self.assertEqual(r.status, 200, r.read()); r.read()
+        self.assertEqual(me("chunky")["role"], "guest"); call("DELETE", "/admin/v1/devices/chunky")
+
     def test_03_device_api_share(self):
         out = S.device_route(app, me("wife"), "POST", ["v1", "invites"], lambda: {"name": "Aunt Salma"})
         self.assertEqual(out["name"], "aunt-salma")

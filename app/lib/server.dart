@@ -72,8 +72,10 @@ class Server {
   ]) async {
     final req = await _http.openUrl(method, Uri.parse('$_base$path'));
     if (body != null) {
+      final bytes = utf8.encode(jsonEncode(body));
       req.headers.contentType = ContentType.json;
-      req.write(jsonEncode(body));
+      req.contentLength = bytes.length; // otherwise Dart sends it chunked
+      req.add(bytes);
     }
     final res = await req.close().timeout(const Duration(seconds: 8));
     final text = await res.transform(utf8.decoder).join();
