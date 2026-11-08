@@ -44,9 +44,9 @@ SERVER_IP = f"{NET}.1"
 DEVICE_PORT = int(ENV("SERDAB_DEVICE_PORT", "8800"))
 ADMIN_PORT = int(ENV("SERDAB_ADMIN_PORT", "8801"))
 ADMIN_HOSTS = [h for h in ENV("SERDAB_ADMIN_HOSTS", "127.0.0.1").split(",") if h]
-OWNER_NAME = ENV("SERDAB_OWNER_NAME", "Taha")
+OWNER_NAME = ENV("SERDAB_OWNER_NAME", "Owner")
 COST_PER_GB = float(ENV("SERDAB_COST_PER_GB", "0.12"))
-TZ = ZoneInfo(ENV("SERDAB_TZ", "Asia/Qatar"))
+TZ = ZoneInfo(ENV("SERDAB_TZ", "UTC"))
 MTU = ENV("SERDAB_MTU", "1380")
 # The public join page (the dashboard's /join): chat apps only make https links tappable.
 JOIN_URL = ENV("SERDAB_JOIN_URL", "")

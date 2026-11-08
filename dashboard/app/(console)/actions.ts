@@ -9,7 +9,7 @@ import {
   revokeDevice,
   setPaused,
 } from "@/lib/server/serdab";
-import { endOfQatarDay } from "@/lib/format";
+import { endOfDay } from "@/lib/format";
 import { NAME_RE, ROLES, type DevicePatch, type Role } from "@/lib/types";
 
 /** Run a serdabd write; on a serdabd error come back to `back` with the message. */
@@ -70,7 +70,7 @@ export async function saveSettings(formData: FormData) {
   };
   if (formData.has("expiresAt")) {
     const raw = String(formData.get("expiresAt") ?? "");
-    patch.expiresAt = raw === "" ? null : endOfQatarDay(raw);
+    patch.expiresAt = raw === "" ? null : endOfDay(raw);
   }
 
   const wasLogged = formData.get("wasLogged") === "1";

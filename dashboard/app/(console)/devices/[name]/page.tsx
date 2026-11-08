@@ -254,7 +254,7 @@ function Settings({ d }: { d: Device }) {
         <label className="block">
           <span className="label">Access ends</span>
           <input type="date" name="expiresAt" defaultValue={d.expiresAt ? isoDay(d.expiresAt) : ""} className="field mt-2" />
-          <span className="mt-1 block text-xs text-muted">End of that day, Qatar time. Empty means never.</span>
+          <span className="mt-1 block text-xs text-muted">End of that day, local time. Empty means never.</span>
         </label>
       ) : null}
       <button type="submit" className="btn-primary w-full">

@@ -1,6 +1,7 @@
-// Display helpers. Times are shown in Qatar, where the family lives.
+// Display helpers. Times are shown in the family's time zone: SERDAB_TZ
+// (an IANA name such as Europe/Paris or Asia/Qatar), UTC when unset.
 
-export const TZ = "Asia/Qatar";
+export const TZ = process.env.SERDAB_TZ || "UTC";
 
 export function bytes(n: number): string {
   if (!Number.isFinite(n) || n <= 0) return "0 B";
@@ -63,7 +64,7 @@ export function expiry(expiresAt: number | null, now = Date.now() / 1000): strin
   return expiresAt > now ? `ends ${day(expiresAt)}` : `expired ${day(expiresAt)}`;
 }
 
-/** YYYY-MM-DD of a timestamp in Qatar, for <input type="date">. */
+/** YYYY-MM-DD of a timestamp in TZ, for <input type="date">. */
 export function isoDay(ts: number): string {
   // en-CA formats dates as YYYY-MM-DD.
   return new Intl.DateTimeFormat("en-CA", {
@@ -74,11 +75,21 @@ export function isoDay(ts: number): string {
   }).format(ts * 1000);
 }
 
-/** End of that day (23:59:59) in Qatar (UTC+3, no DST) as unix seconds. */
-export function endOfQatarDay(iso: string): number | null {
+/** Minutes TZ is ahead of UTC at a given instant (DST-aware). */
+function offsetMinutes(ms: number): number {
+  const name = new Intl.DateTimeFormat("en-US", { timeZone: TZ, timeZoneName: "longOffset" })
+    .formatToParts(ms)
+    .find((p) => p.type === "timeZoneName")?.value ?? "GMT";
+  const m = /GMT([+-])(\d{2}):?(\d{2})?/.exec(name);
+  return m ? (m[1] === "-" ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3] ?? 0)) : 0;
+}
+
+/** End of that day (23:59:59) in TZ, as unix seconds. */
+export function endOfDay(iso: string): number | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
   if (!m) return null;
-  return Math.floor(Date.UTC(+m[1], +m[2] - 1, +m[3], 23 - 3, 59, 59) / 1000);
+  const asUtc = Date.UTC(+m[1], +m[2] - 1, +m[3], 23, 59, 59);
+  return Math.floor((asUtc - offsetMinutes(asUtc) * 60_000) / 1000);
 }
 /** Request time in unix seconds. Server components render once per request, so this is stable. */
 export function nowSeconds(): number {

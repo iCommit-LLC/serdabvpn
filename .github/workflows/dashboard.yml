@@ -30,6 +30,7 @@ env:
   IMAGE_REPO: europe-west1-docker.pkg.dev/gen-lang-client-0922974889/icommit/serdab-dashboard
   RUNTIME_SA: serdab-dashboard-run@gen-lang-client-0922974889.iam.gserviceaccount.com
   SERDAB_API: http://10.200.0.2:8801
+  SERDAB_TZ: Asia/Qatar
 
 jobs:
   deploy:
@@ -69,7 +70,7 @@ jobs:
             --network default \
             --subnet default \
             --vpc-egress private-ranges-only \
-            --set-env-vars "SERDAB_API=${SERDAB_API}" \
+            --set-env-vars "SERDAB_API=${SERDAB_API},SERDAB_TZ=${SERDAB_TZ}" \
             --max-instances 1 \
             --quiet
           echo "Deployed $IMAGE"
