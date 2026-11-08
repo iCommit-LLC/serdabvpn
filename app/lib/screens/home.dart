@@ -308,45 +308,56 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Expanded(
                 child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ArchButton(
-                        state: _state,
-                        onTap: (_me?.expired ?? false) ? () {} : _toggle,
-                        size: size,
-                      ),
-                      const SizedBox(height: 28),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
-                        child: Column(
-                          key: ValueKey((_state, _unanswered)),
-                          children: [
-                            Text(
-                              title,
-                              style: text.displayMedium,
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              sub,
-                              style: text.bodySmall,
-                              textAlign: TextAlign.center,
-                            ),
-                            for (final n in _notices(context, s)) ...[
-                              const SizedBox(height: 10),
+                  // Small phones: the door, words and button shrink together
+                  // instead of overflowing.
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ArchButton(
+                          state: _state,
+                          onTap: (_me?.expired ?? false) ? () {} : _toggle,
+                          size: size,
+                        ),
+                        const SizedBox(height: 28),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          child: Column(
+                            key: ValueKey((_state, _unanswered)),
+                            children: [
                               Text(
-                                n,
-                                style: text.bodySmall!.copyWith(
-                                  color: Palette.sand,
-                                ),
+                                title,
+                                style: text.displayMedium,
                                 textAlign: TextAlign.center,
                               ),
+                              const SizedBox(height: 8),
+                              Text(
+                                sub,
+                                style: text.bodySmall,
+                                textAlign: TextAlign.center,
+                              ),
+                              for (final n in _notices(context, s)) ...[
+                                const SizedBox(height: 10),
+                                Text(
+                                  n,
+                                  style: text.bodySmall!.copyWith(
+                                    color: Palette.sand,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 22),
+                        _DoorButton(
+                          state: _state,
+                          expired: _me?.expired ?? false,
+                          onTap: _toggle,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -391,6 +402,71 @@ extension on _HomeScreenState {
         ),
       if (me.visibleTo != null) s.visibleTo(me.visibleTo!),
     ];
+  }
+}
+
+/// The door is the control, but a door does not look like a button: this says
+/// it in words. Open (amber, filled) when shut; Close (outlined) when open.
+class _DoorButton extends StatelessWidget {
+  const _DoorButton({
+    required this.state,
+    required this.expired,
+    required this.onTap,
+  });
+
+  final TunnelState state;
+  final bool expired;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (expired) return const SizedBox.shrink();
+    final s = S.of(context);
+    final busy =
+        state == TunnelState.connecting || state == TunnelState.disconnecting;
+    final open =
+        state == TunnelState.connected || state == TunnelState.connecting;
+    const size = Size(200, 54);
+    final style = Theme.of(context).textTheme.titleMedium!.copyWith(
+      fontSize: 17,
+      fontWeight: FontWeight.w700,
+    );
+    final label = Text(open ? s.closeBtn : s.openBtn);
+    final icon = busy
+        ? const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : Icon(
+            open ? Icons.power_settings_new_rounded : Icons.lock_open_rounded,
+            size: 20,
+          );
+    return open
+        ? OutlinedButton.icon(
+            onPressed: busy ? null : onTap,
+            icon: icon,
+            label: label,
+            style: OutlinedButton.styleFrom(
+              minimumSize: size,
+              foregroundColor: Palette.text,
+              side: const BorderSide(color: Palette.muted),
+              shape: const StadiumBorder(),
+              textStyle: style,
+            ),
+          )
+        : FilledButton.icon(
+            onPressed: busy ? null : onTap,
+            icon: icon,
+            label: label,
+            style: FilledButton.styleFrom(
+              minimumSize: size,
+              backgroundColor: Palette.amber,
+              foregroundColor: Palette.bg,
+              shape: const StadiumBorder(),
+              textStyle: style,
+            ),
+          );
   }
 }
 

@@ -74,10 +74,12 @@ class S {
   String get shut =>
       _t('The passage is shut.', 'Le passage est fermé.', 'الممر مغلق.');
   String get shutSub => _t(
-    'Tap the door to go underground.',
-    'Touchez la porte pour descendre.',
-    'اضغط على الباب للنزول.',
+    'Tap Open to go underground.',
+    'Touchez Ouvrir pour descendre.',
+    'اضغط افتح للنزول.',
   );
+  String get openBtn => _t('Open', 'Ouvrir', 'افتح');
+  String get closeBtn => _t('Close', 'Fermer', 'أغلق');
   String get opening =>
       _t('Opening the passage…', 'On ouvre le passage…', 'نفتح الممر…');
   String knocking(String host) =>
