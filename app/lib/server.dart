@@ -42,10 +42,13 @@ class Me {
 }
 
 class Invitation {
-  const Invitation(this.name, this.link, this.expiresAt);
+  const Invitation(this.name, this.link, this.expiresAt, {this.joinUrl});
   final String name;
   final String link;
   final DateTime? expiresAt;
+
+  /// The https form chats make tappable (null on an older server).
+  final String? joinUrl;
 }
 
 class ServerError implements Exception {
@@ -103,6 +106,7 @@ class Server {
       j['name'] as String,
       j['link'] as String,
       exp == null ? null : DateTime.fromMillisecondsSinceEpoch(exp * 1000),
+      joinUrl: j['joinUrl'] as String?,
     );
   }
 

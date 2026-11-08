@@ -58,7 +58,11 @@ class T(unittest.TestCase):
 
     def test_03_device_api_share(self):
         out = S.device_route(app, me("wife"), "POST", ["v1", "invites"], lambda: {"name": "Aunt Salma"})
-        self.assertEqual(out["name"], "aunt-salma")
+        self.assertEqual(out["name"], "aunt-salma"); self.assertIsNone(out["joinUrl"])
+        S.JOIN_URL = "https://dash.example/join"
+        j = S.device_route(app, me("wife"), "POST", ["v1", "invites"], lambda: {"name": "temp-j"})
+        self.assertTrue(j["joinUrl"].startswith("https://dash.example/join#c=")); self.assertTrue(j["joinUrl"].endswith("&n=temp-j"))
+        S.JOIN_URL = ""; call("DELETE", "/admin/v1/devices/temp-j")
         g = me("aunt-salma"); self.assertEqual((g["role"], g["created_by"], g["quota_gb"], g["speed_mbps"]), ("guest", "wife", 30, 5))
         self.assertAlmostEqual(g["expires_at"] - g["created_at"], 21 * 86400, delta=2)
         with self.assertRaises(S.ApiError) as e:

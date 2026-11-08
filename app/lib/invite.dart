@@ -52,6 +52,11 @@ class Invite {
   static Invite? extract(String text) {
     final link = RegExp(r'serdab://[^\s<>"]+').firstMatch(text);
     if (link != null) return parseLink(link.group(0)!);
+    // The tappable form sent in chats: https://<dashboard>/join#c=...&n=...
+    final join = RegExp(
+      r'https://[^\s<>"#]+/join#([^\s<>"]+)',
+    ).firstMatch(text);
+    if (join != null) return parseLink('$scheme://add?${join.group(1)}');
     final i = text.indexOf(RegExp(r'\[interface\]', caseSensitive: false));
     if (i >= 0) return Invite(config: WgConfig.parse(text.substring(i)));
     return null;

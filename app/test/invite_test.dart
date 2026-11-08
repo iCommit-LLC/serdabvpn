@@ -64,4 +64,14 @@ void main() {
       throwsFormatException,
     );
   });
+
+  test('reads the tappable https join link from a chat message', () {
+    final link = Invite.encode(sample, name: 'ikram');
+    final query = link.split('?')[1];
+    final msg =
+        'Your Serdab invitation. Tap the link: https://serdab-dashboard-x.a.run.app/join#$query';
+    final i = Invite.extract(msg)!;
+    expect(i.name, 'ikram');
+    expect(i.config.ip, '10.7.0.3');
+  });
 }

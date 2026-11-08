@@ -84,5 +84,5 @@ already reads (`app/lib/invite.dart`); render it as a QR.
 | | | |
 |---|---|---|
 | `GET /v1/me` | | `{name, role, canShare, expiresAt, filtered, monitored: bool, monthDown, monthUp, quotaBytes: int|null, autoCloseMinutes: 120}` (never names who monitors) |
-| `POST /v1/invites` | `{name}` | `{name, link, expiresAt}`; 403 unless `canShare`; always role `guest` |
+| `POST /v1/invites` | `{name}` | `{name, link, joinUrl, expiresAt}`; 403 unless `canShare`; always role `guest`. `joinUrl` (when `SERDAB_JOIN_URL` is set) is the tappable https form for chats: `<dashboard>/join#c=...&n=...` |
 | `GET /v1/invites` | | `{invites: [{name, createdAt, expiresAt, status}]}` the caller's guests |

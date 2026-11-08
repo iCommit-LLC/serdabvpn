@@ -129,8 +129,9 @@ class _ShareScreenState extends State<ShareScreen> {
               FilledButton.icon(
                 icon: const Icon(Icons.send_rounded, size: 18),
                 label: Text(s.sendIt),
-                onPressed: () =>
-                    SharePlus.instance.share(ShareParams(text: made.link)),
+                onPressed: () => SharePlus.instance.share(
+                  ShareParams(text: s.shareMessage(made.joinUrl ?? made.link)),
+                ),
               ),
               const SizedBox(height: 8),
               Text(

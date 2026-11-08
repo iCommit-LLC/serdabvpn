@@ -70,6 +70,8 @@ SERDAB_ADMIN_HOSTS=127.0.0.1${INTERNAL_IP:+,$INTERNAL_IP}
 SERDAB_OWNER_NAME=${SERDAB_OWNER_NAME:-Taha}
 SERDAB_COST_PER_GB=${SERDAB_COST_PER_GB:-0.12}
 SERDAB_TZ=${SERDAB_TZ:-Asia/Qatar}
+# The dashboard's public /join page, so invitations sent in chats are tappable (optional)
+SERDAB_JOIN_URL=${SERDAB_JOIN_URL:-}
 ENV
 
 if command -v systemctl >/dev/null && systemctl is-system-running >/dev/null 2>&1; then

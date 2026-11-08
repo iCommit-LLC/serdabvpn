@@ -212,6 +212,11 @@ class S {
     'إنها مفتاح: أرسلها لذلك الشخص وحده، ثم احذف الرسالة.',
   );
   String get sendIt => _t('Send it', 'L\'envoyer', 'أرسلها');
+  String shareMessage(String link) => _t(
+    'Your Serdab invitation. Tap the link, then "Open in Serdab": $link',
+    'Votre invitation Serdab. Touchez le lien, puis « Ouvrir dans Serdab » : $link',
+    'دعوتك إلى سرداب. اضغط الرابط ثم «افتح في سرداب»: $link',
+  );
   String get inviteAgain =>
       _t('Invite someone else', 'Inviter une autre personne', 'ادعُ شخصًا آخر');
   String get yourGuests =>

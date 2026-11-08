@@ -48,6 +48,8 @@ OWNER_NAME = ENV("SERDAB_OWNER_NAME", "Taha")
 COST_PER_GB = float(ENV("SERDAB_COST_PER_GB", "0.12"))
 TZ = ZoneInfo(ENV("SERDAB_TZ", "Asia/Qatar"))
 MTU = ENV("SERDAB_MTU", "1380")
+# The public join page (the dashboard's /join): chat apps only make https links tappable.
+JOIN_URL = ENV("SERDAB_JOIN_URL", "")
 TICK = float(ENV("SERDAB_TICK", "30"))
 ONLINE_WINDOW = 180          # a handshake younger than this = online
 GUEST_DAYS = 21
@@ -419,6 +421,11 @@ class Serdab:
     def link(self, d) -> str:
         c = base64.urlsafe_b64encode(self.client_conf(d).encode()).decode().rstrip("=")
         return f"serdab://add?c={c}&n={d['name']}"
+
+    def join_url(self, d) -> str | None:
+        """The same invitation as a tappable https link; the key rides after '#',
+        which browsers never send to the server."""
+        return f"{JOIN_URL}#{self.link(d).split('?', 1)[1]}" if JOIN_URL else None
 
     # ── render kernel state from the database ──
     def apply(self):
@@ -820,7 +827,7 @@ def device_route(app: Serdab, d, m: str, p: list[str], body):
             name = (body().get("name") or "")
             name = re.sub(r"[^a-z0-9-]+", "-", str(name).strip().lower()).strip("-")[:32]
             g = app.create(name, "guest", d["name"])
-            return {"name": g["name"], "link": app.link(g), "expiresAt": g["expires_at"]}
+            return {"name": g["name"], "link": app.link(g), "joinUrl": app.join_url(g), "expiresAt": g["expires_at"]}
     raise ApiError(404, "not found")
 
 
