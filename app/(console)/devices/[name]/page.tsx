@@ -1,3 +1,4 @@
+import { AutoSaveForm } from "@/components/AutoSaveForm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RoleBadge, StatusPill } from "@/components/Badges";
@@ -216,8 +217,9 @@ function Toggle({ name, label, help, checked }: { name: string; label: string; h
 function Settings({ d }: { d: Device }) {
   const showExpiry = d.role === "guest" || d.expiresAt !== null;
   return (
-    <form action={saveSettings} className="card space-y-4 p-5">
+    <AutoSaveForm action={saveSettings} className="card space-y-4 p-5">
       <h2 className="font-serif text-2xl">Rules</h2>
+      <p className="text-xs text-muted">Switches and the role save as soon as you change them.</p>
       <input type="hidden" name="name" value={d.name} />
       <input type="hidden" name="wasLogged" value={d.logged ? "1" : "0"} />
       <label className="block">
@@ -256,9 +258,9 @@ function Settings({ d }: { d: Device }) {
         </label>
       ) : null}
       <button type="submit" className="btn-primary w-full">
-        Save rules
+        Save limits
       </button>
-    </form>
+    </AutoSaveForm>
   );
 }
 
