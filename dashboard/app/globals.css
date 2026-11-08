@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+/* Warm black stone, sand strokes, one amber lantern (the app's palette).
+   Light mode is the same stone in daylight: parchment and ink. */
+:root {
+  --c-bg: #120f0c;
+  --c-surface: #1b1612;
+  --c-inset: #16120e;
+  --c-line: #2a231c;
+  --c-line-strong: #3a3027;
+  --c-sand: #e8c48a;
+  --c-amber: #f2b65a;
+  --c-lamp: #ffd58a;
+  --c-text: #f3e9d8;
+  --c-muted: #8c7b66;
+  --c-danger: #d9735b;
+  --c-ok: #9fbf7a;
+  --c-on-sand: #120f0c;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --c-bg: #f6efe3;
+    --c-surface: #fffaf1;
+    --c-inset: #efe6d6;
+    --c-line: #e3d6c1;
+    --c-line-strong: #cdbb9f;
+    --c-sand: #8a5a12;
+    --c-amber: #a8650a;
+    --c-lamp: #c77d0e;
+    --c-text: #2a2118;
+    --c-muted: #7a6a55;
+    --c-danger: #b0462e;
+    --c-ok: #4f7a2a;
+    --c-on-sand: #fffaf1;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-inset: var(--c-inset);
+  --color-line: var(--c-line);
+  --color-line-strong: var(--c-line-strong);
+  --color-sand: var(--c-sand);
+  --color-amber: var(--c-amber);
+  --color-lamp: var(--c-lamp);
+  --color-text: var(--c-text);
+  --color-muted: var(--c-muted);
+  --color-danger: var(--c-danger);
+  --color-ok: var(--c-ok);
+  --color-on-sand: var(--c-on-sand);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-instrument), ui-serif, Georgia, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html {
+  color-scheme: dark light;
+}
+
+body {
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Our <summary> elements are buttons: no disclosure triangle. */
+summary {
+  list-style: none;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+
+@utility btn {
+  display: inline-flex;
+  min-height: 2.5rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding-inline: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  user-select: none;
+  transition: background-color 150ms, color 150ms, border-color 150ms;
+}
+
+@utility btn-primary {
+  @apply btn bg-sand text-on-sand hover:bg-lamp;
+}
+
+@utility btn-ghost {
+  @apply btn border border-line-strong text-sand hover:border-sand;
+}
+
+@utility btn-danger {
+  @apply btn border border-danger text-danger hover:bg-danger hover:text-on-sand;
+}
+
+@utility card {
+  @apply rounded-2xl border border-line bg-surface;
+}
+
+@utility field {
+  @apply w-full min-w-0 rounded-xl border border-line bg-inset px-3 py-2 text-base text-text outline-none placeholder:text-muted focus:border-sand;
+}
+
+@utility label {
+  @apply text-xs font-medium tracking-wide text-muted uppercase;
+}

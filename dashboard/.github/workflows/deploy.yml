@@ -1,0 +1,75 @@
+name: Deploy to Cloud Run
+
+# Push to main → build the image, push it to Artifact Registry, and roll a new
+# serdab-dashboard Cloud Run revision in Paris. Keyless: authenticates to GCP via
+# Workload Identity Federation (no service-account key stored in GitHub).
+#
+# Requires two repo Variables (Settings → Secrets and variables → Actions → Variables):
+#   GCP_WIF_PROVIDER  = the org-wide GitHub provider (same as icommit-dashboard)
+#   GCP_DEPLOYER_SA   = serdab-dashboard-deployer@<project>.iam.gserviceaccount.com
+#
+# The service runs as serdab-dashboard-run and reaches serdabd on the VPN VM's
+# private address through direct VPC egress (no public API on the VM).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT_ID: gen-lang-client-0922974889
+  REGION: europe-west9
+  AR_REGION: europe-west1
+  SERVICE: serdab-dashboard
+  IMAGE_REPO: europe-west1-docker.pkg.dev/gen-lang-client-0922974889/icommit/serdab-dashboard
+  RUNTIME_SA: serdab-dashboard-run@gen-lang-client-0922974889.iam.gserviceaccount.com
+  SERDAB_API: http://10.200.0.2:8801
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # mint the OIDC token WIF exchanges for GCP creds
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${AR_REGION}-docker.pkg.dev" --quiet
+
+      - name: Build and push image
+        run: |
+          IMAGE="${IMAGE_REPO}:${GITHUB_SHA}"
+          # ubuntu-latest is amd64, so this is a native build (no emulation).
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Deploy new Cloud Run revision
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE" \
+            --region "$REGION" \
+            --project "$PROJECT_ID" \
+            --service-account "$RUNTIME_SA" \
+            --network default \
+            --subnet default \
+            --vpc-egress private-ranges-only \
+            --set-env-vars "SERDAB_API=${SERDAB_API}" \
+            --max-instances 1 \
+            --quiet
+          echo "Deployed $IMAGE"
+          gcloud run services describe "$SERVICE" --region "$REGION" \
+            --project "$PROJECT_ID" --format 'value(status.url)'
