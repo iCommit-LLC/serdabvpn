@@ -77,6 +77,15 @@ class T(unittest.TestCase):
         self.assertIn(f"match ip dst {ip}/32", tc); self.assertIn("rate 5000kbit", tc)
         nft = open(ROOT + "/etc/serdab/rules.nft").read()
         self.assertIn("elements = { 10.7.0.2 }", nft); self.assertIn("169.254.0.0/16", nft)
+        self.assertIn("@free accept", nft)
+
+    def test_05b_logged_owner_loses_doh(self):
+        call("PATCH", "/admin/v1/devices/phone", {"logged": True})
+        nft = open(ROOT + "/etc/serdab/rules.nft").read()
+        self.assertIn("set unfiltered { type ipv4_addr; elements = { 10.7.0.2 } }", nft)   # still no family filter
+        self.assertIn("set free { type ipv4_addr;  }", nft)                             # but no DoH escape
+        call("PATCH", "/admin/v1/devices/phone", {"logged": False})
+        self.assertIn("set free { type ipv4_addr; elements = { 10.7.0.2 } }", open(ROOT + "/etc/serdab/rules.nft").read())
 
     def test_06_dns_log(self):
         ip = me("son")["ip"]

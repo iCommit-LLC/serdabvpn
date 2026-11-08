@@ -426,25 +426,30 @@ class Serdab:
             t = now()
             devs = self.devices()
             act = [d for d in devs if self.active(d, t)]
-            sig = json.dumps([[d["pub"], d["ip"], d["filtered"], d["speed_mbps"]] for d in act])
+            sig = json.dumps([[d["pub"], d["ip"], d["filtered"], d["logged"], d["speed_mbps"]] for d in act])
             if sig == self.applied_sig:
                 return
             conf = self.iface_block()
             for d in act:
                 conf += f"\n# serdab:{d['name']}\n[Peer]\nPublicKey = {d['pub']}\nPresharedKey = {d['psk']}\nAllowedIPs = {d['ip']}/32\n"
             self.sys.sync_wg(conf, {d["pub"] for d in act})
-            self.sys.nft(self.ruleset([d["ip"] for d in act if not d["filtered"]]))
+            self.sys.nft(self.ruleset([d["ip"] for d in act if not d["filtered"]],
+                                      [d["ip"] for d in act if not d["filtered"] and not d["logged"]]))
             self.sys.tc(self.tc_script([(d["ip"], d["speed_mbps"]) for d in act if d["speed_mbps"]]))
             self.applied_sig = sig
             log(f"applied: {len(act)} active of {len(devs)}")
 
     @staticmethod
-    def ruleset(unfiltered: list[str]) -> str:
+    def ruleset(unfiltered: list[str], free: list[str] | None = None) -> str:
+        """unfiltered: DNS without the family filter. free: may also use their
+        own encrypted DNS (neither filtered nor logged: nothing to enforce)."""
         uf = ", ".join(unfiltered)
+        fr = ", ".join(unfiltered if free is None else free)
         return f"""table ip serdab_ctl
 delete table ip serdab_ctl
 table ip serdab_ctl {{
   set unfiltered {{ type ipv4_addr; {"elements = { " + uf + " }" if uf else ""} }}
+  set free {{ type ipv4_addr; {"elements = { " + fr + " }" if fr else ""} }}
   set doh {{ type ipv4_addr; flags interval; elements = {{ {", ".join(DOH_NETS)} }} }}
   set private {{ type ipv4_addr; flags interval; elements = {{ {", ".join(PRIVATE_NETS)} }} }}
 
@@ -464,7 +469,7 @@ table ip serdab_ctl {{
   chain forward {{
     type filter hook forward priority filter; policy accept;
     iifname "{WG_IF}" ip daddr @private drop
-    iifname "{WG_IF}" ip saddr @unfiltered accept
+    iifname "{WG_IF}" ip saddr @free accept
     iifname "{WG_IF}" tcp dport 853 reject with tcp reset
     iifname "{WG_IF}" udp dport 853 drop
     iifname "{WG_IF}" ip daddr @doh tcp dport 443 reject with tcp reset
