@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><rect width="1024" height="1024" fill="#120F0C"/><g transform="translate(102.4 102.4) scale(0.8)">
+  <defs>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F2B65A" stop-opacity="0"/>
+      <stop offset="55%" stop-color="#F2B65A" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#F2B65A" stop-opacity="0.85"/>
+    </linearGradient>
+    <radialGradient id="lamp" cx="0.5" cy="1" r="0.75">
+      <stop offset="0%" stop-color="#FFD58A" stop-opacity="0.95"/>
+      <stop offset="60%" stop-color="#F2B65A" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#F2B65A" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="door"><path d="M 295.9 800 L 295.9 548.7 A 230 230 0 1 1 728.1 548.7 L 728.1 800 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#door)">
+    <rect x="200" y="200" width="624" height="600" fill="url(#glow)"/>
+    <rect x="200" y="200" width="624" height="600" fill="url(#lamp)"/>
+  </g>
+  <rect x="362" y="598" width="300" height="22" rx="11" fill="#E8C48A" fill-opacity="0.45"/>
+  <rect x="392" y="658" width="240" height="22" rx="11" fill="#E8C48A" fill-opacity="0.7"/>
+  <rect x="422" y="718" width="180" height="22" rx="11" fill="#F6D9A6"/>
+  <path d="M 295.9 800 L 295.9 548.7 A 230 230 0 1 1 728.1 548.7 L 728.1 800" fill="none" stroke="#E8C48A" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 190 800 H 834" stroke="#E8C48A" stroke-width="28" stroke-linecap="round"/>
+</g></svg>
