@@ -167,7 +167,12 @@ class S {
     'Se ferme tout seul à $time',
     'يُغلق من تلقاء نفسه عند $time',
   );
-  String get addHour => _t('+1 hour', '+1 heure', '+ساعة');
+  String get addHour => _t('Renew 1 hour', 'Renouveler 1 h', 'جدّد ساعة');
+  String closesIn(int minutes) => _t(
+    'Closes in $minutes min',
+    'Se ferme dans $minutes min',
+    'يُغلق خلال $minutes د',
+  );
 
   // What the server says about this phone
   /// Shown to devices whose site history is kept. Says that it is

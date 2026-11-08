@@ -470,8 +470,12 @@ class _DoorButton extends StatelessWidget {
   }
 }
 
+/// When the door closes by itself. "Renew 1 hour" appears only in the last
+/// ten minutes (the native side refuses earlier), so hours never stack.
 class _CloseRow extends StatelessWidget {
   const _CloseRow({required this.at, required this.onExtend});
+
+  static const renewWindow = Duration(minutes: 10);
 
   final DateTime at;
   final VoidCallback onExtend;
@@ -480,41 +484,52 @@ class _CloseRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final text = Theme.of(context).textTheme;
+    final left = at.difference(DateTime.now());
+    final canRenew = left <= renewWindow;
     final time = MaterialLocalizations.of(context).formatTimeOfDay(
       TimeOfDay.fromDateTime(at),
       alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
     );
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 8, 8),
+      padding: EdgeInsetsDirectional.fromSTEB(16, 8, canRenew ? 8 : 16, 8),
+      constraints: const BoxConstraints(minHeight: 56),
       decoration: BoxDecoration(
         color: Palette.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Palette.line),
+        border: Border.all(color: canRenew ? Palette.amber : Palette.line),
       ),
       child: Row(
         children: [
-          const Icon(Icons.timer_outlined, size: 18, color: Palette.sand),
+          Icon(
+            Icons.timer_outlined,
+            size: 18,
+            color: canRenew ? Palette.amber : Palette.sand,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              s.closesAt(time),
+              canRenew
+                  ? s.closesIn((left.inSeconds / 60).ceil().clamp(0, 10))
+                  : s.closesAt(time),
               style: text.bodyMedium!.copyWith(color: Palette.text),
             ),
           ),
-          const SizedBox(width: 8),
-          // The theme makes buttons full width; this one is a small pill.
-          FilledButton.tonal(
-            onPressed: onExtend,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(0, 40),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              backgroundColor: Palette.amber.withValues(alpha: 0.16),
-              foregroundColor: Palette.amber,
-              shape: const StadiumBorder(),
+          if (canRenew) ...[
+            const SizedBox(width: 8),
+            // The theme makes buttons full width; this one is a small pill.
+            FilledButton.tonal(
+              onPressed: onExtend,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 40),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                backgroundColor: Palette.amber.withValues(alpha: 0.16),
+                foregroundColor: Palette.amber,
+                shape: const StadiumBorder(),
+              ),
+              child: Text(s.addHour),
             ),
-            child: Text(s.addHour),
-          ),
+          ],
         ],
       ),
     );

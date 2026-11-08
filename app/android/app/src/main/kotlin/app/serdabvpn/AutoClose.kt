@@ -13,8 +13,10 @@ import java.text.DateFormat
 import java.util.Date
 
 /**
- * The door closes by itself [AutoClose.schedule]d minutes after it opened:
- * a warning five minutes before, with "+1 hour", then the close. Alarms, not a
+ * The door closes by itself [AutoClose.schedule]d minutes after it opened.
+ * Ten minutes before, a notification offers "Renew 1 hour"; renewing is only
+ * possible in those last ten minutes and gives one hour from that moment, so
+ * hours never stack. At the deadline it closes and says so. Alarms, not a
  * timer in the app, so it happens with the app swiped away and the phone asleep.
  * Inexact alarms (no exact-alarm permission): Android may fire them a few
  * minutes late, never early.
@@ -27,16 +29,21 @@ object AutoClose {
     const val WARN = "app.serdabvpn.autoclose.WARN"
     const val CLOSE = "app.serdabvpn.autoclose.CLOSE"
     const val EXTEND = "app.serdabvpn.autoclose.EXTEND"
-    private const val WARN_BEFORE_MS = 5 * 60_000L
+    const val RENEW_WINDOW_MS = 10 * 60_000L
+    private const val WARN_BEFORE_MS = RENEW_WINDOW_MS
 
     fun closeAt(ctx: Context): Long =
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong(CLOSE_AT, 0L)
 
     fun schedule(ctx: Context, minutes: Int) = arm(ctx, System.currentTimeMillis() + minutes * 60_000L)
 
-    fun extend(ctx: Context, minutes: Int) {
-        val base = maxOf(System.currentTimeMillis(), closeAt(ctx).takeIf { it > 0 } ?: System.currentTimeMillis())
-        arm(ctx, base + minutes * 60_000L)
+    /** Renews for [minutes] from now, only within the last ten minutes. Returns whether it renewed. */
+    fun extend(ctx: Context, minutes: Int): Boolean {
+        val at = closeAt(ctx)
+        val now = System.currentTimeMillis()
+        if (at == 0L || at - now > RENEW_WINDOW_MS + 30_000) return false
+        arm(ctx, now + minutes * 60_000L)
+        return true
     }
 
     fun cancel(ctx: Context) {
@@ -112,9 +119,9 @@ class AutoCloseReceiver : BroadcastReceiver() {
 class Texts private constructor(private val lang: String) {
     private fun t(en: String, fr: String, ar: String) = when (lang) { "fr" -> fr; "ar" -> ar; else -> en }
     val channel get() = t("Closing the tunnel", "Fermeture du tunnel", "إغلاق السرداب")
-    val warnTitle get() = t("Serdab closes in 5 minutes", "Serdab se ferme dans 5 minutes", "سيُغلق سرداب خلال 5 دقائق")
-    fun warnBody(time: String) = t("At $time. Still on a call? Add an hour.", "À $time. Toujours en appel ? Ajoutez une heure.", "عند $time. ما زلت في مكالمة؟ أضف ساعة.")
-    val extend get() = t("+1 hour", "+1 heure", "+ساعة")
+    val warnTitle get() = t("Serdab closes in 10 minutes", "Serdab se ferme dans 10 minutes", "سيُغلق سرداب خلال 10 دقائق")
+    fun warnBody(time: String) = t("At $time. Still on a call? Renew for one hour.", "À $time. Toujours en appel ? Renouvelez pour une heure.", "عند $time. ما زلت في مكالمة؟ جدّد لساعة.")
+    val extend get() = t("Renew 1 hour", "Renouveler 1 h", "جدّد ساعة")
     val closedTitle get() = t("Serdab closed", "Serdab est fermé", "أُغلق سرداب")
     val closedBody get() = t("Open the app when you need it again.", "Ouvrez l'app quand vous en avez besoin.", "افتح التطبيق عندما تحتاجه مجددًا.")
 

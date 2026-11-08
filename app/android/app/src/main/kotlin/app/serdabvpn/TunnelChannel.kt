@@ -40,7 +40,7 @@ class TunnelChannel(private val activity: Activity, messenger: BinaryMessenger) 
                     result.success(null)
                 }
                 "extend" -> {
-                    AutoClose.extend(activity, call.argument<Int>("minutes") ?: 60)
+                    AutoClose.extend(activity, call.argument<Int>("minutes") ?: 60)   // refused outside the last 10 min
                     result.success(AutoClose.closeAt(activity).takeIf { it > 0 })
                 }
                 "closeAt" -> result.success(AutoClose.closeAt(activity).takeIf { it > 0 })

@@ -164,7 +164,8 @@ final class TunnelChannel: NSObject, FlutterStreamHandler {
         }
     }
 
-    /// Moves the deadline [minutes] past the later of now and the current one.
+    /// Renews for [minutes] from now, only within the last ten minutes before
+    /// the deadline (otherwise the deadline stays): hours never stack.
     /// Static and Flutter-free: the "+1 hour" notification button runs it with
     /// the app in the background, before any Flutter engine exists.
     static func extend(minutes: Int, _ done: @escaping (TimeInterval?) -> Void) {
@@ -174,7 +175,11 @@ final class TunnelChannel: NSObject, FlutterStreamHandler {
             }), manager.connection.status == .connected || manager.connection.status == .connecting else {
                 done(nil); return
             }
-            let at = max(Date().timeIntervalSince1970, AutoClose.closeAt) + Double(minutes * 60)
+            let now = Date().timeIntervalSince1970
+            guard AutoClose.closeAt > 0, AutoClose.closeAt - now <= AutoClose.renewWindow + 30 else {
+                done(AutoClose.closeAt > 0 ? AutoClose.closeAt : nil); return
+            }
+            let at = now + Double(minutes * 60)
             setDeadline(at, on: manager)
             manager.saveToPreferences { _ in
                 AutoClose.set(at)
@@ -242,6 +247,7 @@ final class TunnelChannel: NSObject, FlutterStreamHandler {
 enum AutoClose {
     static let category = "serdab.close"
     static let extendAction = "serdab.extend"
+    static let renewWindow: TimeInterval = 600     // renewing is only possible in the last 10 minutes
     private static let key = "serdab.closeAt"
 
     static var closeAt: TimeInterval { UserDefaults.standard.double(forKey: key) }
@@ -263,14 +269,14 @@ enum AutoClose {
         let now = Date().timeIntervalSince1970
         guard at > now else { return }
         let time = DateFormatter.localizedString(from: Date(timeIntervalSince1970: at), dateStyle: .none, timeStyle: .short)
-        if at - 300 > now + 1 {
+        if at - renewWindow > now + 1 {
             let warn = UNMutableNotificationContent()
             warn.title = Words.warnTitle
             warn.body = Words.warnBody(time)
             warn.categoryIdentifier = category
             warn.sound = .default
             c.add(UNNotificationRequest(identifier: "serdab.warn", content: warn,
-                trigger: UNTimeIntervalNotificationTrigger(timeInterval: at - 300 - now, repeats: false)))
+                trigger: UNTimeIntervalNotificationTrigger(timeInterval: at - renewWindow - now, repeats: false)))
         }
         let closed = UNMutableNotificationContent()
         closed.title = Words.closedTitle
@@ -289,11 +295,11 @@ enum Words {
         default: return en
         }
     }
-    static var warnTitle: String { t("Serdab closes in 5 minutes", "Serdab se ferme dans 5 minutes", "سيُغلق سرداب خلال 5 دقائق") }
+    static var warnTitle: String { t("Serdab closes in 10 minutes", "Serdab se ferme dans 10 minutes", "سيُغلق سرداب خلال 10 دقائق") }
     static func warnBody(_ time: String) -> String {
-        t("At \(time). Still on a call? Add an hour.", "À \(time). Toujours en appel ? Ajoutez une heure.", "عند \(time). ما زلت في مكالمة؟ أضف ساعة.")
+        t("At \(time). Still on a call? Renew for one hour.", "À \(time). Toujours en appel ? Renouvelez pour une heure.", "عند \(time). ما زلت في مكالمة؟ جدّد لساعة.")
     }
-    static var extend: String { t("+1 hour", "+1 heure", "+ساعة") }
+    static var extend: String { t("Renew 1 hour", "Renouveler 1 h", "جدّد ساعة") }
     static var closedTitle: String { t("Serdab closed", "Serdab est fermé", "أُغلق سرداب") }
     static var closedBody: String { t("Open the app when you need it again.", "Ouvrez l'app quand vous en avez besoin.", "افتح التطبيق عندما تحتاجه مجددًا.") }
 }

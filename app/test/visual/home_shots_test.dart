@@ -45,11 +45,12 @@ void main() {
     );
   });
 
-  for (final (name, connected, size, locale) in [
-    ('shut-iphone16', false, const Size(393, 852), 'en'),
-    ('open-iphone16', true, const Size(393, 852), 'en'),
-    ('open-iphoneSE', true, const Size(375, 667), 'en'),
-    ('open-ar', true, const Size(393, 852), 'ar'),
+  for (final (name, connected, size, locale, minutesLeft) in [
+    ('shut-iphone16', false, const Size(393, 852), 'en', 0),
+    ('open-iphone16', true, const Size(393, 852), 'en', 90),
+    ('open-renew-window', true, const Size(393, 852), 'en', 7),
+    ('open-iphoneSE', true, const Size(375, 667), 'en', 7),
+    ('open-ar', true, const Size(393, 852), 'ar', 7),
   ]) {
     testWidgets(name, skip: !on, (tester) async {
       tester.view.physicalSize = size * 3;
@@ -58,7 +59,9 @@ void main() {
       final m =
           TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
       final state = connected ? 'connected' : 'disconnected';
-      final closeAt = DateTime(2026, 11, 8, 17, 49).millisecondsSinceEpoch;
+      final closeAt = DateTime.now()
+          .add(Duration(minutes: minutesLeft, seconds: 30))
+          .millisecondsSinceEpoch;
       MockStreamHandlerEventSink? sinkRef;
       m.setMockMethodCallHandler(
         const MethodChannel('serdab/tunnel'),
