@@ -77,6 +77,16 @@ class Tunnel {
   Future<void> openVpnSettings() =>
       _methods.invokeMethod<void>('openVpnSettings');
 
+  /// Android: another app's VPN is up (an Always-on ExpressVPN, say), which
+  /// makes Android refuse ours. Always false on iOS, where VPNs take turns.
+  Future<bool> otherVpn() async {
+    try {
+      return await _methods.invokeMethod<bool>('otherVpn') ?? false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
+
   Future<TunnelState> state() async =>
       _parse(await _methods.invokeMethod<String>('state'));
 

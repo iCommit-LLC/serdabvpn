@@ -56,6 +56,7 @@ class TunnelChannel(private val activity: Activity, messenger: BinaryMessenger) 
                     result.success(null)
                 }
                 "state" -> result.success(Engine.state(activity))
+                "otherVpn" -> result.success(otherVpn())
                 "stats" -> stats(result)
                 else -> result.notImplemented()
             }
@@ -116,6 +117,23 @@ class TunnelChannel(private val activity: Activity, messenger: BinaryMessenger) 
         Engine.setWanted(activity, alwaysOn)
         if (!alwaysOn && closeAfterMinutes > 0) AutoClose.schedule(activity, closeAfterMinutes) else AutoClose.cancel(activity)
         Engine.up(activity, parsed) { finish(it, result) }
+    }
+
+    /**
+     * Another app's VPN is running (ExpressVPN set to Always-on, typically).
+     * Android then refuses ours, and no app may switch another one off: the
+     * best we can do is say so and open the right settings page.
+     */
+    @Suppress("DEPRECATION")
+    private fun otherVpn(): Boolean {
+        if (Engine.state(activity) == "connected") return false
+        // (Which app is set to Always-on is hidden from apps since Android 12; the
+        // Dart side also reads an instant refusal of the consent dialog as this.)
+        // Or simply running right now.
+        val cm = activity.getSystemService(android.net.ConnectivityManager::class.java) ?: return false
+        return cm.allNetworks.any { n ->
+            cm.getNetworkCapabilities(n)?.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN) == true
+        }
     }
 
     private fun finish(err: Throwable?, result: MethodChannel.Result) {

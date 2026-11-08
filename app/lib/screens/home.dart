@@ -40,7 +40,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _tunnel = Tunnel.instance;
   late final WgConfig _config = widget.config;
   late String _label = widget.label;
@@ -55,12 +55,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Me? _me;
   DateTime? _closeAt;
 
+  /// Android: another app's Always-on VPN blocks ours (no app may turn it off).
+  bool _otherVpn = false;
+
   /// Always-on is for the owner and family; everyone else closes after 2 h.
   bool get _stayOpen => _alwaysOn && (_me?.mayStayOpen ?? false);
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _sub = _tunnel.states.listen(_onState, onError: (_) {});
     _tick = Timer.periodic(const Duration(seconds: 1), (_) => _onTick());
     _start();
@@ -85,8 +89,21 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Back from the VPN settings with the other VPN switched off: open the
+  /// door without being asked.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !_otherVpn) return;
+    _tunnel.otherVpn().then((still) {
+      if (!mounted || still) return;
+      setState(() => _otherVpn = false);
+      _toggle();
+    });
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _sub?.cancel();
     _tick?.cancel();
     super.dispose();
@@ -154,10 +171,23 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_state == TunnelState.connected || _state == TunnelState.connecting) {
         await _tunnel.disconnect();
       } else {
-        if (!await _tunnel.prepare()) {
+        if (Platform.isAndroid && await _tunnel.otherVpn()) {
+          setState(() => _otherVpn = true);
           _onState(TunnelState.denied);
           return;
         }
+        final asked = Stopwatch()..start();
+        if (!await _tunnel.prepare()) {
+          // Refused. A person needs a second to read the dialog; Android closes
+          // it by itself in milliseconds when another app is the Always-on VPN.
+          final instant = asked.elapsedMilliseconds < 1200;
+          final other =
+              Platform.isAndroid && (instant || await _tunnel.otherVpn());
+          if (mounted) setState(() => _otherVpn = other);
+          _onState(TunnelState.denied);
+          return;
+        }
+        if (_otherVpn) setState(() => _otherVpn = false);
         _onState(TunnelState.connecting);
         if (!_stayOpen) await _tunnel.requestNotifications();
         await _tunnel.connect(
@@ -269,6 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
     TunnelState.connected => (s.underground, s.leavesThrough(_label)),
     TunnelState.connecting => (s.opening, s.knocking(_config.host)),
     TunnelState.disconnecting => (s.comingUp, ''),
+    TunnelState.denied when _otherVpn => (s.otherVpn, s.otherVpnSub),
     TunnelState.denied => (s.denied, s.deniedSub),
     TunnelState.disconnected => (s.shut, s.shutSub),
   };
@@ -312,51 +343,74 @@ class _HomeScreenState extends State<HomeScreen> {
                   // instead of overflowing.
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ArchButton(
-                          state: _state,
-                          onTap: (_me?.expired ?? false) ? () {} : _toggle,
-                          size: size,
-                        ),
-                        const SizedBox(height: 28),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 250),
-                          child: Column(
-                            key: ValueKey((_state, _unanswered)),
-                            children: [
-                              Text(
-                                title,
-                                style: text.displayMedium,
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                sub,
-                                style: text.bodySmall,
-                                textAlign: TextAlign.center,
-                              ),
-                              for (final n in _notices(context, s)) ...[
-                                const SizedBox(height: 10),
+                    // A width bound inside the FittedBox, so long sentences wrap
+                    // instead of becoming one line that shrinks everything.
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.sizeOf(context).width - 48,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ArchButton(
+                            state: _state,
+                            onTap: (_me?.expired ?? false) ? () {} : _toggle,
+                            size: size,
+                          ),
+                          const SizedBox(height: 28),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 250),
+                            child: Column(
+                              key: ValueKey((_state, _unanswered)),
+                              children: [
                                 Text(
-                                  n,
-                                  style: text.bodySmall!.copyWith(
-                                    color: Palette.sand,
-                                  ),
+                                  title,
+                                  style: text.displayMedium,
                                   textAlign: TextAlign.center,
                                 ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  sub,
+                                  style: text.bodySmall,
+                                  textAlign: TextAlign.center,
+                                ),
+                                for (final n in _notices(context, s)) ...[
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    n,
+                                    style: text.bodySmall!.copyWith(
+                                      color: Palette.sand,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 22),
-                        _DoorButton(
-                          state: _state,
-                          expired: _me?.expired ?? false,
-                          onTap: _toggle,
-                        ),
-                      ],
+                          const SizedBox(height: 22),
+                          if (_otherVpn && _state == TunnelState.denied)
+                            FilledButton.icon(
+                              onPressed: () => _tunnel.openVpnSettings(),
+                              icon: const Icon(
+                                Icons.settings_rounded,
+                                size: 20,
+                              ),
+                              label: Text(s.vpnSettings),
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size(240, 54),
+                                backgroundColor: Palette.amber,
+                                foregroundColor: Palette.bg,
+                                shape: const StadiumBorder(),
+                              ),
+                            )
+                          else
+                            _DoorButton(
+                              state: _state,
+                              expired: _me?.expired ?? false,
+                              onTap: _toggle,
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

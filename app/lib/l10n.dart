@@ -102,6 +102,18 @@ class S {
     '$host لم يردّ. هل الخادم يعمل، وهل منفذ UDP $port مفتوح؟',
   );
   String get comingUp => _t('Coming back up…', 'On remonte…', 'نصعد…');
+  String get otherVpn => _t(
+    'Another VPN is in the way.',
+    'Un autre VPN bloque le passage.',
+    'شبكة VPN أخرى تسدّ الطريق.',
+  );
+  String get otherVpnSub => _t(
+    'An app like ExpressVPN is set to Always-on. Open the settings, tap its gear, turn Always-on off, and come back.',
+    'Une app comme ExpressVPN est en VPN permanent. Ouvrez les réglages, touchez sa roue dentée, désactivez-le et revenez.',
+    'تطبيق مثل ExpressVPN مضبوط على VPN دائم. افتح الإعدادات، اضغط على الترس، أوقفه ثم عُد.',
+  );
+  String get vpnSettings =>
+      _t('Open VPN settings', 'Ouvrir les réglages VPN', 'افتح إعدادات VPN');
   String get denied =>
       _t('The phone said no.', 'Le téléphone a dit non.', 'الهاتف رفض.');
   String get deniedSub => _t(
