@@ -68,7 +68,6 @@ jobs:
             --subnet default \
             --vpc-egress private-ranges-only \
             --set-env-vars "SERDAB_API=${SERDAB_API}" \
-            --allow-unauthenticated \
             --max-instances 1 \
             --quiet
           echo "Deployed $IMAGE"
