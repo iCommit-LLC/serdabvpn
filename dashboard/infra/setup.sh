@@ -7,7 +7,7 @@
 set -euo pipefail
 P=gen-lang-client-0922974889
 NUM=248690338020
-REPO=iCommit-LLC/serdab-dashboard
+REPO=iCommit-LLC/serdabvpn   # the dashboard lives in dashboard/ of this repo
 RUN=serdab-dashboard-run
 DEP=serdab-dashboard-deployer
 g() { gcloud --project "$P" --quiet "$@"; }
@@ -39,9 +39,9 @@ gh variable set GCP_WIF_PROVIDER -R "$REPO" \
 gh variable set GCP_DEPLOYER_SA -R "$REPO" --body "$DEP_SA"
 
 echo "→ first deploy (GitHub Actions), then open the login page to the internet"
-gh workflow run deploy.yml -R "$REPO"
+gh workflow run dashboard.yml -R "$REPO"
 sleep 10
-RUN_ID=$(gh run list -R "$REPO" --workflow deploy.yml --limit 1 --json databaseId -q '.[0].databaseId')
+RUN_ID=$(gh run list -R "$REPO" --workflow dashboard.yml --limit 1 --json databaseId -q '.[0].databaseId')
 gh run watch "$RUN_ID" -R "$REPO" --exit-status
 g run services add-iam-policy-binding serdab-dashboard --region europe-west9 --member allUsers --role roles/run.invoker >/dev/null
 g run services describe serdab-dashboard --region europe-west9 --format 'value(status.url)'

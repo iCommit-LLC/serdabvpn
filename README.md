@@ -27,7 +27,9 @@ phone ──WireGuard (UDP 51820)──▶ your VM in Paris ──▶ the intern
 | Part | What it is | Lines |
 |---|---|---|
 | `server/deploy.sh` | one command: a Debian VM in Google Cloud Paris, a static IP, a firewall rule, WireGuard installed, your first device enrolled | ~60 |
-| `server/serdab` | the server CLI: `add`, `link`, `qr`, `conf`, `rm`, `list` (devices, last handshake, traffic) | ~170 |
+| `server/serdab` | the server CLI: `add`, `link`, `qr`, `conf`, `rm`, `disable`, `pause`, `list` (a thin client of serdabd) | |
+| `server/serdabd/` | the daemon on the server: devices, roles, expiry, quotas, family DNS filter, site history, the two APIs ([docs/api.md](docs/api.md)) | |
+| `dashboard/` | the web console (Next.js on Cloud Run, Paris): who is on, usage and cost, rules, invitations, pause, the public `/join` page for invitations sent in chats. Deploys from `.github/workflows/dashboard.yml` on changes under `dashboard/` | |
 | `app/` | the Flutter app, Android and iOS, on the **official** WireGuard engines ([wireguard-android](https://github.com/WireGuard/wireguard-android), [WireGuardKit](https://github.com/WireGuard/wireguard-apple)) | |
 
 The app is a thin door over WireGuard. It does not invent crypto, it does not

@@ -1,4 +1,4 @@
-name: Deploy to Cloud Run
+name: Deploy dashboard to Cloud Run
 
 # Push to main → build the image, push it to Artifact Registry, and roll a new
 # serdab-dashboard Cloud Run revision in Paris. Keyless: authenticates to GCP via
@@ -11,13 +11,15 @@ name: Deploy to Cloud Run
 # The service runs as serdab-dashboard-run and reaches serdabd on the VPN VM's
 # private address through direct VPC egress (no public API on the VM).
 
+# Only dashboard changes deploy it: app and server commits never touch Cloud Run.
 on:
   push:
     branches: [main]
+    paths: ["dashboard/**"]
   workflow_dispatch: {}
 
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: dashboard-deploy-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -53,7 +55,7 @@ jobs:
         run: |
           IMAGE="${IMAGE_REPO}:${GITHUB_SHA}"
           # ubuntu-latest is amd64, so this is a native build (no emulation).
-          docker build -t "$IMAGE" .
+          docker build -t "$IMAGE" dashboard
           docker push "$IMAGE"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
