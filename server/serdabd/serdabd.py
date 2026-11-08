@@ -53,7 +53,7 @@ ONLINE_WINDOW = 180          # a handshake younger than this = online
 GUEST_DAYS = 21
 PENDING_HOURS = 48
 LOG_DAYS = 30
-AUTO_CLOSE_MIN = 120
+AUTO_CLOSE_MIN = int(ENV("SERDAB_AUTO_CLOSE_MIN", "120"))
 MAX_GUESTS_PER_SHARER = 10
 
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
