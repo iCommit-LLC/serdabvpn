@@ -403,23 +403,42 @@ class _CloseRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final text = Theme.of(context).textTheme;
     final time = MaterialLocalizations.of(context).formatTimeOfDay(
       TimeOfDay.fromDateTime(at),
       alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
     );
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 8, 8),
+      decoration: BoxDecoration(
+        color: Palette.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Palette.line),
+      ),
       child: Row(
         children: [
-          const Icon(Icons.timer_outlined, size: 16, color: Palette.muted),
-          const SizedBox(width: 8),
+          const Icon(Icons.timer_outlined, size: 18, color: Palette.sand),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               s.closesAt(time),
-              style: Theme.of(context).textTheme.bodySmall,
+              style: text.bodyMedium!.copyWith(color: Palette.text),
             ),
           ),
-          TextButton(onPressed: onExtend, child: Text(s.addHour)),
+          const SizedBox(width: 8),
+          // The theme makes buttons full width; this one is a small pill.
+          FilledButton.tonal(
+            onPressed: onExtend,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 40),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              backgroundColor: Palette.amber.withValues(alpha: 0.16),
+              foregroundColor: Palette.amber,
+              shape: const StadiumBorder(),
+            ),
+            child: Text(s.addHour),
+          ),
         ],
       ),
     );
